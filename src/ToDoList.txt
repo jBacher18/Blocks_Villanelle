@@ -1,0 +1,35 @@
+TO DO LIST (For Blockly Villanelle):
+Last thing I did: Linked up the generator functions (just copied them into a function in app.tsx which is getting tooo big)
+
+TO DO Tonight:
+ (DONE) Fix Saving
+ + Add Math
+ + Reorganize the Boxes in the toolbox
+ + Check: Each Block
+ + Change: Tab Switching from 2 of the same to alternate sides (Also I kinda want 3 pane, which may require some finagling)
+ + See if I can do dynamic size styling
+ 
+KNOWN BUGS (not fixing):
+ + You can definitely attach blocks improperly -> Somewhat, certain things work right, but other things, not so much (this might be fixable)
+ + 
+
+
+Note: 11/12/20
+There seem to be a lot of generator problems, but generally:
+No New line after effects in conditions (also the two condition subblocks getting dashes when they're not supposed to, and not be properly aligned)
+
+Bug (Error? Problems) Fixes:
+ + IMPORTANT: Add the fix that makes it so each block has the proper legal subblocks
+ + Seems like free floating blocks get code generated at end. Wonder if I can turn that off, or just fix that somehow
+ + REMOVE SPACE IN VARIABLE NAMES (Somehow)
+ + Weird stuff when switch from Blocks to anything else
+
+Things to do:
+ + Fix File saving to save both an XML and a YAML File
+ + Fix File loading to take either an XML or YAML 
+ + Add checkbox to disable automatic Blocks -> code (Maybe then also add button to generate?)
+
+ + IMPORTANT: Devise (and check) a list of tests to determine all the generation of code is working properly
+ + minor: Split out functions in App TSX (readability, etc)
+ 
+ + More later, probably

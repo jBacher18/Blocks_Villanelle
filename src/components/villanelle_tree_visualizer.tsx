@@ -319,7 +319,13 @@ export class VillanelleTreeVisualizer extends React.Component<{
         }).filter(obj => obj !== undefined);
     }
 
+	//JTB: This is the old error I fixed where dashes cause Villanelle to crash because the
+	//TreeVisualizer encounters an error, going to try and update this to see if I can fix it again
+	//Note from future me: so catching the error and returning null actually caused more errors
+	//But catching the error, doing literally nothing of importance, and then letting the function auto return doesn't?
+	//So Typescript/javascript has an auto return value that isn't just nonsense? I don't know why that fixed it, but it did
     getEffectsNodes(effects: string[], errors, dataPath, status?: Status) {
+		try{
         return effects.map((effect, index) => {
             if (errors[dataPath + '/' + index]) {
                 return this.getErrorTreeNode(errors[dataPath + '/' + index].message, effect + "");
@@ -334,6 +340,10 @@ export class VillanelleTreeVisualizer extends React.Component<{
                 }
             }
         });
+		}
+		catch(e){
+			console.log(effects);
+		}
     }
 
     private makeErrorTreeNodeForExistingNode(node: ITreeNode, error) {
