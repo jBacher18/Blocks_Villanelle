@@ -111,13 +111,23 @@ export class App extends React.Component<{}, {
   
 
   public setCurrentTab(currentTab, navID) {
+	  var cTO = this.state.currentTabOne.slice(0), cTT = this.state.currentTabTwo.slice(0);
+	  		console.log(cTO);
+		console.log(cTT);
 	if(navID === 'one'){
+
 		//Save code in the on-change method for the blocks component
-		this.setState({ currentTabOne: currentTab});
+		if(currentTab == this.state.currentTabTwo)
+			this.setState({ currentTabTwo: cTO, currentTabOne: currentTab});
+		else
+			this.setState({ currentTabOne: currentTab});
+		
 	}
 	else if(navID === 'two'){
-		
-		this.setState({ currentTabTwo: currentTab});
+		if(currentTab == this.state.currentTabOne)
+			this.setState({ currentTabOne: cTT, currentTabTwo: currentTab});
+		else
+			this.setState({ currentTabTwo: currentTab});
 	}
   }
 
@@ -419,7 +429,7 @@ export class App extends React.Component<{}, {
 		//console.log(this.state.currentXML);
 		let newXML = this.state.currentXML
 		let reactBlocks = <ReactBlockly 
-			toolboxCategories={[{"name":"Villanelle Main","colour":"#5C81A6","blocks":[{"type":"villanellprog"}]},{"name":"Initialization","colour":"#5C81A6","blocks":[{"fields":{"variableName":"<var_name>"},"type":"setvariable"}]},{"name":"User Interaction","colour":"#5C81A6","blocks":[{"type":"description"},{"type":"useraction"},{"fields":{"type":"selector"},"type":"node"},{"type":"condition"}]},{"name":"Agents","colour":"#5C81A6","blocks":[{"fields":{"type":"selector"},"type":"node"},{"type":"condition"},{"type":"effecttext"},{"type":"effects"}]},{"name":"Effects","colour":"#5C81A6","blocks":[{"statements":{"substatementList":{"fields":{"variableName":"<var_name>"},"type":"setvariable","shadow":false}},"type":"effects"},{"fields":{"variableName":"<var_name>"},"type":"setvariable"}]},{"name":"Text","colour":"#5C81A6","blocks":[{"fields":{},"type":"text"},{"mutation":{"attributes":{"items":"2"}},"type":"text_join"},{"fields":{"varName":"<var_name>"},"type":"getvariable"}]},{"name":"Logic","colour":"#5C81A6","blocks":[{"fields":{"OP":"EQ"},"type":"logic_compare"},{"fields":{"OP":"AND"},"type":"logic_operation"},{"type":"logic_negate"},{"fields":{"BOOL":"TRUE"},"type":"logic_boolean"},{"fields":{"varName":"<var_name>"},"type":"getvariable"}]}]}
+			toolboxCategories={[{"name":"Villanelle Main","colour":"#5C81A6","blocks":[{"type":"villanellprog"}]},{"name":"Initialization","colour":"#5C81A6","blocks":[{"fields":{"variableName":"<var_name>"},"type":"setvariable"}]},{"name":"User Interaction","colour":"#5C81A6","blocks":[{"type":"description"},{"type":"useraction"},{"fields":{"type":"selector"},"type":"node"},{"type":"condition"},{"type":"effects"}]},{"name":"Agents","colour":"#5C81A6","blocks":[{"fields":{"type":"selector"},"type":"node"},{"type":"condition"},{"type":"effecttext"},{"type":"effects"}]},{"name":"Effects","colour":"#5C81A6","blocks":[{"statements":{"substatementList":{"fields":{"variableName":"<var_name>"},"type":"setvariable","shadow":false}},"type":"effects"},{"fields":{"variableName":"<var_name>"},"type":"setvariable"}]},{"name":"Text","colour":"#5C81A6","blocks":[{"fields":{},"type":"text"},{"mutation":{"attributes":{"items":"2"}},"type":"text_join"},{"fields":{"varName":"<var_name>"},"type":"getvariable"}]},{"name":"Logic","colour":"#5C81A6","blocks":[{"fields":{"OP":"EQ"},"type":"logic_compare"},{"fields":{"OP":"AND"},"type":"logic_operation"},{"type":"logic_negate"},{"fields":{"BOOL":"TRUE"},"type":"logic_boolean"},{"fields":{"varName":"<var_name>"},"type":"getvariable"}]},{"name":"Math","colour":"#5C81A6","blocks":[{"type":"math_number"},{"type":"math_arithmetic"}]}]}
 			wrapperDivClassName="fill-height"
 			workspaceDidChange={this.blocklyWorkspaceDidChange}
 			initialXml={newXML}

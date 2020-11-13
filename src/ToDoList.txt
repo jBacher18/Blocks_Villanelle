@@ -6,7 +6,7 @@ TO DO Tonight:
  + Add Math
  + Reorganize the Boxes in the toolbox
  + Check: Each Block
- + Change: Tab Switching from 2 of the same to alternate sides (Also I kinda want 3 pane, which may require some finagling)
+ (Done) Change: Tab Switching from 2 of the same to alternate sides (Also I kinda want 3 pane, which may require some finagling)
  + See if I can do dynamic size styling
  
 KNOWN BUGS (not fixing):
