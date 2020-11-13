@@ -82,7 +82,6 @@
     "jsonschema": "^1.2.4",
     "mousetrap": "^1.6.3",
     "node": "^8.10.0",
-    "node-win-x64": "^11.14.0",
     "react": "^16.8.1",
     "react-ace": "^6.5.0",
     "react-blockly": "^6.0.1",
