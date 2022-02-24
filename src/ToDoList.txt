@@ -1,4 +1,24 @@
 TO DO LIST (For Blockly Villanelle):
+
+FOUND BUGS - CHANGING AGENTS ALTERS THEIR NAMES
+NEW LINE Agent Name?
+Maybe the agents as a block is better?
+Tree Visualization highlighting is borked
+
+Set Variable --> Remove altogether
+
+Variable databse instead of just writing out the name of the variable
+
+Screen Resizing problems -> Same as always (should be able to fix this fast)
+
+Errors don't show up on the blocks page (Only on scripts)
+
+Check Node Moduels for use 
+
+scrolling in the blocks window, thing not a thing?
+Maybe have code highlight the blocks as well (like as the code is running)
+
+
 Last thing I did: Linked up the generator functions (just copied them into a function in app.tsx which is getting tooo big)
 
 TO DO Tonight:
@@ -25,8 +45,8 @@ Bug (Error? Problems) Fixes:
  + Weird stuff when switch from Blocks to anything else
 
 Things to do:
- + Fix File saving to save both an XML and a YAML File
- + Fix File loading to take either an XML or YAML 
+ DONE Fix File saving to save both an XML and a YAML File
+ DONE Fix File loading to take either an XML or YAML 
  + Add checkbox to disable automatic Blocks -> code (Maybe then also add button to generate?)
 
  + IMPORTANT: Devise (and check) a list of tests to determine all the generation of code is working properly

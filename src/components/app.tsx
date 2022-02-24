@@ -17,9 +17,6 @@ import * as ConfigFiles from './exampleContent';
 
 import * as Blockly from 'blockly/core';
 
-//console.log(Blockly);
-
-//ProceduralTest
 import { VillanelleWindowTab } from './villanelle_window_tab';
 import { VillanelleWindowPane } from './villanelle_window_pane';
 import { VillanelleWindowTabClass } from './villanelle_window_tab';
@@ -33,8 +30,6 @@ var remote = require('electron').remote;
 var dialog = remote.dialog;
 
 var Mousetrap = require('mousetrap');
-
-//console.log(ReactBlockly);
 
 export class App extends React.Component<{}, {
   currentTabOne: string,
@@ -57,11 +52,13 @@ export class App extends React.Component<{}, {
     super(props);
 	
 	
-    //var yamlString = fs.readFileSync(path.resolve(__dirname, "../parsing/yaml/weird_city_interloper.yml"), 'utf8');
     var yamlString = '';
     var initializedObject = this.initializeGame(yamlString);
+	let date: date = new Date();
+	var newlogfilename = date.getUTCDate() + "-" + (date.getUTCMonth() + 1) + "-" + date.getUTCFullYear() + "-" + date.getHours() + "-" + date.getMinutes() + "-Log" + ".txt";
+	var newSwitchLogName = date.getUTCDate() + "-" + (date.getUTCMonth() + 1) + "-" + date.getUTCFullYear() + "-" + date.getHours() + "-" + date.getMinutes() + "-Switch" + ".txt";
     this.state = {
-	  currentTabOne: 'Script',
+	  currentTabOne: 'Blocks',
 	  currentTabTwo: 'Tree',
       code: yamlString,
       errors: this.getErrorsByDataPath(initializedObject.errors),
@@ -70,6 +67,11 @@ export class App extends React.Component<{}, {
       nodeIdStatusMap: initializedObject.nodeIdStatusMap,
       rootNodeDatapaths: initializedObject.rootNodeDatapaths,
       currentFile: "[New file]",
+	  logFilePrefix: newSwitchLogName,
+	  codeSnapShotFileName: newlogfilename,
+	  lastLogTime: date,
+	  lastLog: "",
+	  millisecondsBetweenLogs: 10000,
       fileOpened: false,
       unsaved: false,
       currentFilePath: "",
@@ -89,7 +91,6 @@ export class App extends React.Component<{}, {
 	this.initBlocksForBlockly = this.initBlocksForBlockly.bind(this);
 	this.initGeneratorForBlockly = this.initGeneratorForBlockly.bind(this);
 	this.blocklyWorkspaceDidChange = this.blocklyWorkspaceDidChange.bind(this);
-	this.onBlocksChange = this.onBlocksChange.bind(this);
 	
 	this.initBlocksForBlockly();
 	this.initGeneratorForBlockly();
@@ -111,9 +112,8 @@ export class App extends React.Component<{}, {
   
 
   public setCurrentTab(currentTab, navID) {
-	  var cTO = this.state.currentTabOne.slice(0), cTT = this.state.currentTabTwo.slice(0);
-	  		console.log(cTO);
-		console.log(cTT);
+	var cTO = this.state.currentTabOne.slice(0), cTT = this.state.currentTabTwo.slice(0);
+
 	if(navID === 'one'){
 
 		//Save code in the on-change method for the blocks component
@@ -152,7 +152,7 @@ export class App extends React.Component<{}, {
     if (!this.state.fileOpened) {
       return this.saveAsFile();
     }
-
+	if(this.state.currentFilePath.endsWith(".yml"){
     fs.writeFile(this.state.currentFilePath, this.state.code, (err) => {
       if (err) {
         alert(err);
@@ -161,7 +161,19 @@ export class App extends React.Component<{}, {
       }
       this.setState({ unsaved: false });
     })
-  }
+	}
+	else{
+	  fs.writeFile(this.state.currentFilePath, this.state.currentXML, (err) => {
+      if (err) {
+        alert(err);
+        console.log(err);
+        return;
+      }
+      this.setState({ unsaved: false });
+    })
+	}
+	}
+  
 
   public saveAsFile() {
     dialog.showSaveDialog(null, {}, (filepath) => {
@@ -228,7 +240,17 @@ export class App extends React.Component<{}, {
 			this.setCode(data);
 		}
 		else{
-			this.setState({ currentXML: data, currentTabOne: 'Blocks'});
+			if(this.state.currentTabOne !== 'Blocks'){
+				if(this.state.currentTabTwo === 'Blocks'){
+					this.setState({ currentTabTwo: 'Play'});
+					this.setState({ currentXML: data, currentTabTwo: 'Blocks'});
+				}else{
+					this.setState({ currentXML: data, currentTabOne: 'Blocks'});
+				}
+			}else{
+				this.setState({ currentTabOne: 'Play'});
+				this.setState({ currentXML: data, currentTabOne: 'Blocks'});
+			}
 		}
 		this.setState({
 			currentFile: path.basename(filePath),
@@ -306,13 +328,21 @@ export class App extends React.Component<{}, {
   }
   
   public blocklyWorkspaceDidChange(workspace){
-	  //if(this.state.workspaceRef == null){
-		//workspace.addChangeListener(this.onBlocksChange);
-		//this.state.workspaceRef = workspace;
-	  //}
 	let xmlCode = Blockly.Xml.domToText(Blockly.Xml.workspaceToDom(workspace));
 	this.setState({ currentXML: xmlCode });
 	
+    var time = new Date().getTime();
+	//console.log(time - this.state.lastLogTime.getTime());
+	//console.log(this.state.millisecondsBetweenLogs);
+	if(time - this.state.lastLogTime.getTime() > this.state.millisecondsBetweenLogs){
+		if(xmlCode != this.state.lastLog){
+			fs.appendFileSync(this.state.codeSnapShotFileName, "\nSnapshot at " + Date() + "\n\n" + xmlCode);
+			this.state.lastLog = xmlCode;
+		}else{
+			fs.appendFileSync(this.state.codeSnapShotFileName, "\nSnapshot at " + Date() + "\n\n" + "<No Changes>");
+		}
+		this.state.lastLogTime = new Date();
+	}
 	
 	/*
 	 * From J. Thomas Bacher to anyone else:
@@ -321,62 +351,21 @@ export class App extends React.Component<{}, {
 	 * This makes this line seem very weird (Villanelle code from javascript?) but it is right
 	 */
 	let villanelleCode = Blockly.JavaScript.workspaceToCode(workspace);
-	//console.log(villanelleCode);
 	this.setCode(villanelleCode);
-	//Need, going to update both 
-	//How to deal with special case where two block workspaces are open?
-	//Maybe just call render?
-	//That didn't work 
-	//console.log(xmlCode);
   }
-  
-  public onBlocksChange(event){
-	  var workspace = this.state.workspaceRef;
-					if(event instanceof Blockly.Events.Move){
-					var changedBlock = workspace.getBlockById(event.blockId);
-					if(changedBlock != null){
-						//Am I top?
-						var parentBlock = changedBlock.getParent();
-						var changedBlockInputs = changedBlock.inputList;
-						if(parentBlock == null){
-							parentBlock = changedBlock.getPreviousBlock()
-						}
-						if(parentBlock != null){
-							//console.log(parentBlock);
-							//Special Case, the parent block is the initialization block
-							// If so, index 1 is Init, index 3 is user interaction, index > 3 is agent
-							var input = parentBlock.getInputWithBlock(changedBlock);
-							if(input != null){
-								changedBlock.setNextStatement(true, input.connection.getCheck());
-								for(var i = 0; i < changedBlockInputs.length; i++){
-									if(changedBlockInputs[i].type == Blockly.STATEMENT_INPUT){
-										changedBlockInputs[i].connection.setCheck(input.connection.getCheck());
-									}
-								}
-							}else{
-								changedBlock.setNextStatement(true, parentBlock.nextConnection.getCheck());
-								for(var i = 0; i < changedBlockInputs.length; i++){
-									if(changedBlockInputs[i].type == Blockly.STATEMENT_INPUT){
-										changedBlockInputs[i].connection.setCheck(parentBlock.nextConnection.getCheck());
-									}
-								}
-							}
-						}
-						changedBlock.setTooltip('The Event Fired, also Im ' + event.blockId);
-					}
-					
-				}
-  }
+
   
   public getPageAtID(currID, windowWidth, windowHeight){
 	  
-	let refTab, name;
+	let refTab, name, otherTab;
 	if(currID === 'one'){
 		refTab = this.state.currentTabOne;
+		otherTab = this.state.currentTabTwo;
 		name = "Tab One";
 	}
 	else{
 		refTab = this.state.currentTabTwo;
+		otherTab = this.state.currentTabOne;
 		name = "Tab Two";
 	}
 	
@@ -424,18 +413,19 @@ export class App extends React.Component<{}, {
 	  </div>);
 	}
 	else if (refTab === 'Blocks' ){
-		//Add later
-		//console.log("Rendering for " + currID);
-		//console.log(this.state.currentXML);
 		let newXML = this.state.currentXML
+		/* From J Thomas Bacher (2/23/2022):
+			This is the saddest thing from when I worked on Villanelle:
+			The only way to implement the toolbox is to pass it a javascript object containing all the information for the toolbox
+			As a result we have this nonsense of a line that is impossible to mess with. I tried putting it into a javascript
+			object and passing it in, but that didn't take. Would fix if I knew how
+		*/
 		let reactBlocks = <ReactBlockly 
-			toolboxCategories={[{"name":"Villanelle Main","colour":"#5C81A6","blocks":[{"type":"villanellprog"}]},{"name":"Initialization","colour":"#5C81A6","blocks":[{"fields":{"variableName":"<var_name>"},"type":"setvariable"}]},{"name":"User Interaction","colour":"#5C81A6","blocks":[{"type":"description"},{"type":"useraction"},{"fields":{"type":"selector"},"type":"node"},{"type":"condition"},{"type":"effects"}]},{"name":"Agents","colour":"#5C81A6","blocks":[{"fields":{"type":"selector"},"type":"node"},{"type":"condition"},{"type":"effecttext"},{"type":"effects"}]},{"name":"Effects","colour":"#5C81A6","blocks":[{"statements":{"substatementList":{"fields":{"variableName":"<var_name>"},"type":"setvariable","shadow":false}},"type":"effects"},{"fields":{"variableName":"<var_name>"},"type":"setvariable"}]},{"name":"Text","colour":"#5C81A6","blocks":[{"fields":{},"type":"text"},{"mutation":{"attributes":{"items":"2"}},"type":"text_join"},{"fields":{"varName":"<var_name>"},"type":"getvariable"}]},{"name":"Logic","colour":"#5C81A6","blocks":[{"fields":{"OP":"EQ"},"type":"logic_compare"},{"fields":{"OP":"AND"},"type":"logic_operation"},{"type":"logic_negate"},{"fields":{"BOOL":"TRUE"},"type":"logic_boolean"},{"fields":{"varName":"<var_name>"},"type":"getvariable"}]},{"name":"Math","colour":"#5C81A6","blocks":[{"type":"math_number"},{"type":"math_arithmetic"}]}]}
+			toolboxCategories={ [ { "name":"Villanelle Main", "colour":"#5C81A6", "blocks":[ { "type":"villanellprog" } ] }, { "name":"Initialization", "colour":"#5C81A6", "blocks":[ { "fields":{ "variableName":"<var_name>" }, "type":"setvariable" } ] }, { "name":"User Interaction", "colour":"#5C81A6", "blocks":[ { "type":"description" }, { "type":"useraction" }, { "fields":{ "type":"selector" }, "type":"node" }, { "type":"condition" }, { "type":"effects" } ] }, { "name":"Agents", "colour":"#5C81A6", "blocks":[ { "type":"agent" }, { "fields":{ "type":"selector" }, "type":"node" }, { "type":"condition" }, { "type":"effecttext" }, { "type":"effects" } ] }, { "name":"Effects", "colour":"#5C81A6", "blocks":[ { "statements":{ "substatementList":{ "fields":{ "variableName":"<var_name>" }, "type":"setvariable", "shadow":false } }, "type":"effects" }, { "fields":{ "variableName":"<var_name>" }, "type":"setvariable" } ] }, { "name":"Text", "colour":"#5C81A6", "blocks":[ { "fields":{ }, "type":"text" }, { "fields":{ "varName":"<var_name>" }, "type":"getvariable" } ] }, { "name":"Logic", "colour":"#5C81A6", "blocks":[ { "fields":{ "OP":"EQ" }, "type":"logic_compare" }, { "fields":{ "OP":"AND" }, "type":"logic_operation" }, { "fields":{ "BOOL":"TRUE" }, "type":"logic_boolean" }, { "fields":{ "varName":"<var_name>" }, "type":"getvariable" } ] }, { "name":"Math", "colour":"#5C81A6", "blocks":[ { "type":"math_number" }, { "type":"math_arithmetic" } ] } ] }
 			wrapperDivClassName="fill-height"
 			workspaceDidChange={this.blocklyWorkspaceDidChange}
 			initialXml={newXML}
 		/>
-		//test
-		//console.log(reactBlocks);
 		
 
 		
@@ -451,7 +441,6 @@ export class App extends React.Component<{}, {
 		{myNavBar}
 		{reactBlocks}
 	  </div>);
-		//something
 	}
 	else if (refTab === 'Play' ){
 	  let uio = scripting.getUserInteractionObject();
@@ -488,8 +477,7 @@ export class App extends React.Component<{}, {
       }
 	}
 	else if (refTab === 'Tree' ){
-		//This one is unique, it should be colored if a play attempt is going on
-		//I'll do it later
+		if(otherTab !== 'Play'){
 		let treeVisualizerPanel = <VillanelleTreeVisualizer
         doc={this.state.doc}
         errors={this.state.errors}
@@ -506,6 +494,31 @@ export class App extends React.Component<{}, {
 	  {myNavBar}
 	  {treeVisualizerPanel}
 	  </div>);
+		}
+		else{
+		let treeVisualizerPanel = <VillanelleTreeVisualizer
+          doc={this.state.doc}
+          errors={this.state.errors}
+          showDebugState={true}
+          nodeIdToDatapathMap={this.state.nodeIdToDatapathMap}
+          nodeIdStatusMap={this.state.nodeIdStatusMap}
+          rootNodeDatapaths={this.state.rootNodeDatapaths}
+          dataPathToNodeStatusMap={this.dataPathToNodeStatusMap}
+          dataPathToNodeIdMap={this.dataPathToNodeIdMap} />
+		  
+		  		return (<div>
+		<Divider />
+        <Divider />
+        <Divider />
+        <Divider />
+		<Divider />
+        <Divider />
+        <Divider />
+        <Divider />
+	  {myNavBar}
+	  {treeVisualizerPanel}
+	  </div>);
+		}
 	}
 	
 	console.log('Reached improper end');
@@ -518,72 +531,12 @@ export class App extends React.Component<{}, {
     let windowHeight = screen.size.height;
 	
 	let pageOne = this.getPageAtID('one', windowWidth, windowHeight), pageTwo = this.getPageAtID('two', windowWidth, windowHeight);
-	//console.log('Page One and Two:');
-	//console.log(pageOne);
-	//console.log(pageTwo);
 	
 	mainPage = this.getSplitPane(windowWidth, windowHeight, pageOne, pageTwo);
-	//console.log(mainPage);
-    /*if (this.state.currentTab === 'Script') {
-      let compilationResult = this.getCallout();
-
-      let aceEditorPanel = <div>
-        <VillanelleAceEditor
-          handler={this.setCode}
-          code={this.state.code}
-          height={windowHeight - 200}
-          saveHandler={this.saveFile}
-          saveAsHandler={this.saveAsFile}
-          openHandler={this.openFile}
-        />
-        {compilationResult}
-      </div>;
-      let treeVisualizerPanel = <VillanelleTreeVisualizer
-        doc={this.state.doc}
-        errors={this.state.errors}
-        showDebugState={false} />
-
-      mainPage = this.getSplitPane(windowWidth, windowHeight, aceEditorPanel, treeVisualizerPanel);
-
-    } else if (this.state.currentTab === 'Play') {
-
-      let uio = scripting.getUserInteractionObject();
-      let hasErrors = Object.keys(this.state.errors).length != 0;
-      if (hasErrors) {
-        mainPage = <VillanellePlayArea hasErrors={true} uio={uio} handler={this.setNodeIdStatusMap} />;
-      } else {
-        let playAreaPanel = <VillanellePlayArea hasErrors={false} uio={uio} handler={this.setNodeIdStatusMap} />;
-        let treeVisualizerPanel = <VillanelleTreeVisualizer
-          doc={this.state.doc}
-          errors={this.state.errors}
-          showDebugState={true}
-          nodeIdToDatapathMap={this.state.nodeIdToDatapathMap}
-          nodeIdStatusMap={this.state.nodeIdStatusMap}
-          rootNodeDatapaths={this.state.rootNodeDatapaths}
-          dataPathToNodeStatusMap={this.dataPathToNodeStatusMap}
-          dataPathToNodeIdMap={this.dataPathToNodeIdMap} />
-
-        mainPage = this.getSplitPane(windowWidth, windowHeight, playAreaPanel, treeVisualizerPanel);
-      }
-    }*/
 
 
-	//let exampleTab = <VillanelleWindowTab name='Example Tab' isActive={false} childPanel={null} />;
 	let exampleTab = new VillanelleWindowTabClass('Example Tab', false, null);
 	var listOfTabs:Array<number> = new Array();
-	
-	//let compilationResult = this.getCallout();
-	/*let newEditor = <div>
-        <VillanelleAceEditor
-          handler={this.setCode}
-          code={this.state.code}
-          height={windowHeight - 200}
-          saveHandler={this.saveFile}
-          saveAsHandler={this.saveAsFile}
-          openHandler={this.openFile}
-        />
-        {compilationResult}
-      </div>;*/
 	
 	listOfTabs.push(new VillanelleWindowTabClass('Code', false, null));
 	
@@ -600,7 +553,6 @@ export class App extends React.Component<{}, {
 	let newMain = new VillanelleWindowPaneClass(listOfTabs, 0, 0, windowWidth, windowHeight);
 	
 	
-	//mainPage = newMain.getComponent();
     return (
       <div>
         <Divider />
@@ -635,7 +587,7 @@ export class App extends React.Component<{}, {
         default={{
           x: 0,
           y: 0,
-          width: windowWidth / 2,
+          width: windowWidth / 2 + 200,
           height: windowHeight,
         }}
         disableDragging={true}
@@ -644,9 +596,9 @@ export class App extends React.Component<{}, {
       </Rnd>
       <Rnd
         default={{
-          x: windowWidth / 2,
+          x: windowWidth / 2 + 200,
           y: 0,
-          width: windowWidth / 2,
+          width: windowWidth / 2 - 200,
           height: windowHeight,
         }}
         disableDragging={true}
@@ -667,8 +619,8 @@ export class App extends React.Component<{}, {
   }
   
   
-  //Copying code from a javascript file to a typescript file can't cause any problems, right?
-  //It worked the last time, so going to do it agian for the generator functions
+  //The tooltip references a gear because orignally this was a mutation block that
+  //could be extended for more agents. It turned out to be too confusing. 
   initBlocksForBlockly(){
 	Blockly.Blocks['villanellprog'] = {
   init: function() {
@@ -680,173 +632,14 @@ export class App extends React.Component<{}, {
         .appendField("User Interaction:");
     this.appendStatementInput("userInteraction")
         .setCheck(["description", "userAction", "condition", "node"]);
+	this.appendDummyInput()
+        .appendField("Agents:");
+	this.setNextStatement(true, "agent");
     this.setColour(120);
- this.setTooltip("");
+ this.setTooltip("To add new agents, select the gear and add additional agent blocks.");
  this.setHelpUrl("");
  
- //NOTE: The following code will not be automatically generated by blockly's factory
- //therefore, make sure to be careful not to override it
-	this.setMutator(new Blockly.Mutator(['main_vill', 'new_agent']));
-  },
-  agentCount_: 0,
-
-  /**
-   * Don't automatically add STATEMENT_PREFIX and STATEMENT_SUFFIX to generated
-   * code.  These will be handled manually in this block's generators.
-   */
-  suppressPrefixSuffix: true,
-
-  /**
-   * Create XML to represent the number of else-if and else inputs.
-   * @return {Element} XML storage element.
-   * @this {Blockly.Block}
-   */
-  mutationToDom: function() {
-    if (!this.agentCount_) {
-      return null;
-    }
-    var container = Blockly.utils.xml.createElement('mutation');
-    if (this.agentCount_) {
-      container.setAttribute('agents', this.agentCount_);
-    }
-    
-    return container;
-  },
-  /**
-   * Parse XML to restore the else-if and else inputs.
-   * @param {!Element} xmlElement XML storage element.
-   * @this {Blockly.Block}
-   */
-  domToMutation: function(xmlElement) {
-    this.agentCount_ = parseInt(xmlElement.getAttribute('agents'), 10) || 0;
-    this.rebuildShape_();
-  },
-  /**
-   * Populate the mutator's dialog with this block's components.
-   * @param {!Blockly.Workspace} workspace Mutator's workspace.
-   * @return {!Blockly.Block} Root block in mutator.
-   * @this {Blockly.Block}
-   */
-  decompose: function(workspace) {
-    var containerBlock = workspace.newBlock('main_vill');
-    containerBlock.initSvg();
-    var connection = containerBlock.nextConnection;
-    for (var i = 1; i <= this.agentCount_; i++) {
-      var agentBlock = workspace.newBlock('new_agent');
-      agentBlock.initSvg();
-      connection.connect(agentBlock.previousConnection);
-      connection = agentBlock.nextConnection;
-    }
-	
-    return containerBlock;
-  },
-  /**
-   * Reconfigure this block based on the mutator dialog's components.
-   * @param {!Blockly.Block} containerBlock Root block in mutator.
-   * @this {Blockly.Block}
-   */
-  compose: function(containerBlock) {
-    var clauseBlock = containerBlock.nextConnection.targetBlock();
-    // Count number of inputs.
-    this.agentCount_ = 0;
-
-    var valueConnections = [null];
-    var statementConnections = [null];
-    var elseStatementConnection = null;
-    while (clauseBlock) {
-      switch (clauseBlock.type) {
-        case 'new_agent':
-          this.agentCount_++;
-          valueConnections.push(clauseBlock.valueConnection_);
-          statementConnections.push(clauseBlock.statementConnection_);
-          break;
-        default:
-          throw TypeError('Unknown block type: ' + clauseBlock.type);
-      }
-      clauseBlock = clauseBlock.nextConnection &&
-          clauseBlock.nextConnection.targetBlock();
-    }
-    this.updateShape_();
-    // Reconnect any child blocks.
-    this.reconnectChildBlocks_(valueConnections, statementConnections,
-        elseStatementConnection);
-  },
-  /**
-   * Store pointers to any connected child blocks.
-   * @param {!Blockly.Block} containerBlock Root block in mutator.
-   * @this {Blockly.Block}
-   */
-  saveConnections: function(containerBlock) {
-    var clauseBlock = containerBlock.nextConnection.targetBlock();
-    var i = 1;
-    while (clauseBlock) {
-      switch (clauseBlock.type) {
-        case 'new_agent':
-          var inputIf = this.getInput('AGENT' + i);
-          clauseBlock.valueConnection_ =
-              inputIf && inputIf.connection.targetConnection;
-          i++;
-          break;
-        default:
-          throw TypeError('Unknown block type: ' + clauseBlock.type);
-      }
-      clauseBlock = clauseBlock.nextConnection &&
-          clauseBlock.nextConnection.targetBlock();
-    }
-  },
-  /**
-   * Reconstructs the block with all child blocks attached.
-   * @this {Blockly.Block}
-   */
-  rebuildShape_: function() {
-    var valueConnections = [null];
-    var statementConnections = [null];
-
-    var i = 1;
-    while (this.getInput('AGENT' + i)) {
-      var inputIf = this.getInput('AGENT' + i);
-      statementConnections.push(inputIf.connection.targetConnection);
-      i++;
-    }
-    this.updateShape_();
-    this.reconnectChildBlocks_(valueConnections, statementConnections);
-  },
-  /**
-   * Modify this block to have the correct number of inputs.
-   * @this {Blockly.Block}
-   * @private
-   */
-  updateShape_: function() {
-    // Delete everything.
-
-    var i = 1;
-    while (this.getInput('AGENT' + i)) {
-      this.removeInput('AGENT' + i);
-      i++;
-    }
-    // Rebuild block.
-    for (i = 1; i <= this.agentCount_; i++) {
-      this.appendStatementInput('AGENT' + i)
-          .setCheck(['condition', 'node'])
-          .appendField('Agent')
-		  .appendField(new Blockly.FieldTextInput("<agent_name>"), "agentName" + i);
-    }
-
-  },
-  /**
-   * Reconnects child blocks.
-   * @param {!Array.<?Blockly.RenderedConnection>} valueConnections List of
-   * value connections for 'if' input.
-   * @param {!Array.<?Blockly.RenderedConnection>} statementConnections List of
-   * statement connections for 'do' input.
-   * @param {?Blockly.RenderedConnection} elseStatementConnection Statement
-   * connection for else input.
-   * @this {Blockly.Block}
-   */
-  reconnectChildBlocks_: function(valueConnections, statementConnections) {
-    for (var i = 1; i <= this.agentCount_; i++) {
-      Blockly.Mutator.reconnect(valueConnections[i], this, 'AGENT' + i);
-    }
+ /* The Mutator code was here, if you need it add it here */
   }
 };
 
@@ -859,7 +652,7 @@ Blockly.Blocks['setvariable'] = {
         .appendField(new Blockly.FieldTextInput("<var_name>"), "variableName")
         .appendField("to");
     this.setPreviousStatement(true, null);
-    this.setNextStatement(true, null);
+    this.setNextStatement(true, "setvariable");
     this.setColour(65);
  this.setTooltip("");
  this.setHelpUrl("");
@@ -902,7 +695,7 @@ Blockly.Blocks['node'] = {
     this.appendDummyInput()
         .appendField(new Blockly.FieldDropdown([["Selector","selector"], ["Sequence","sequence"]]), "type");
     this.appendStatementInput("body")
-        .setCheck(["description", "userAction", "effectText", "condition", "node", "effects"]);
+        .setCheck(["description", "userAction", "effectText", "condition", "effects"]);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
     this.setColour(230);
@@ -932,7 +725,7 @@ Blockly.Blocks['effecttext'] = {
         .setCheck("String")
         .appendField("Effect Text:");
     this.setPreviousStatement(true, null);
-    this.setNextStatement(true, null);
+    this.setNextStatement(true, ["description", "userAction", "effectText", "condition", "node", "effects"]);
     this.setColour(230);
  this.setTooltip("");
  this.setHelpUrl("");
@@ -945,7 +738,7 @@ Blockly.Blocks['effects'] = {
         .setCheck("setVariable")
         .appendField("Set Variables:");
     this.setPreviousStatement(true, null);
-    this.setNextStatement(true, null);
+    this.setNextStatement(true, ["description", "userAction", "effectText", "condition", "node", "effects"]);
     this.setColour(230);
  this.setTooltip("");
  this.setHelpUrl("");
@@ -955,7 +748,7 @@ Blockly.Blocks['effects'] = {
 Blockly.Blocks['getvariable'] = {
   init: function() {
     this.appendDummyInput()
-        .appendField("Variable")
+        .appendField("Var")
         .appendField(new Blockly.FieldTextInput("<var_name>"), "varName");
     this.setOutput(true, null);
     this.setColour(230);
@@ -973,7 +766,7 @@ Blockly.Blocks['condition'] = {
         .setCheck(null)
         .appendField("do");
     this.setPreviousStatement(true, null);
-    this.setNextStatement(true, null);
+    this.setNextStatement(true, ["description", "userAction", "effectText", "node", "effects"]);
     this.setColour(230);
  this.setTooltip("");
  this.setHelpUrl("");
@@ -1020,7 +813,6 @@ Blockly.Blocks['new_agent'] = {
 };
   }
 	initGeneratorForBlockly(){
-// Just writing up some functions, not sure where I'm going to put them yet
 
 //In theory this should fix the indent problem
 Blockly.JavaScript.INDENT = "    ";
@@ -1031,15 +823,7 @@ Blockly.JavaScript['villanellprog'] = function(block) {
   
   var statements_userinteraction = 'User Interaction:\r\n' + Blockly.JavaScript.statementToCode(block, 'userInteraction');
   
-  
-  //Fixing indentation problem REMOVE IF YOU MODIFY THE MAIN VILLANELLE BLOCK
-  var statements_agents = '';
-  for(var i = 1; i <= block.agentCount_; i++){
-	  statements_agents += block.getFieldValue('agentName' + i) + ':\r\n' + Blockly.JavaScript.statementToCode(block, 'AGENT' + i);
-  }
-  //statements_agents = statements_agents.substring(2);
-  // TODO: Assemble JavaScript into code variable.
-  var code = statements_initialization + '\r\n' +  statements_userinteraction + '\r\n' + statements_agents;
+  var code = statements_initialization + '\r\n' +  statements_userinteraction; // + '\r\n' + statements_agents;
   return code;
 };
 
@@ -1048,7 +832,7 @@ Blockly.JavaScript['setvariable'] = function(block) {
   var text_variablename = block.getFieldValue('variableName');
   var value_variablevalue = Blockly.JavaScript.valueToCode(block, 'variableValue', Blockly.JavaScript.ORDER_ATOMIC);
 
-  var code = '- ' + text_variablename.replace(/\s/g, '') + " := " + value_variablevalue + '\r\n';
+  var code = '- ' + text_variablename.replace(/\s/g, '') + " := " + value_variablevalue+ '\r\n';
   return code;
 };
 
@@ -1063,29 +847,66 @@ Blockly.JavaScript['node'] = function(block) {
   var dropdown_type = block.getFieldValue('type');
   var statements_body = Blockly.JavaScript.statementToCode(block, 'body');
 
-  var code = '' + dropdown_type + ':\r\n' + statements_body;
+  var finalStatement = '';
+	
+  var statementsArray = statements_body.split('\r\n');
+  var proceed = true;
+  if(statementsArray.length > 0){
+	  if(statementsArray[0].search('effect text') != -1)
+		  finalStatement += statementsArray[0].replace('effect text', '- effect text') + '\r\n';
+	  else if(statementsArray[0].search('effects') != -1)
+		  finalStatement += statementsArray[0].replace('effects', '- effects') + '\r\n';
+	  else{
+		  finalStatement += statementsArray[0] + '\r\n';
+		  finalStatement += statementsArray[1] + '\r\n';
+		  proceed = false;
+	  }
+	  
+	  if(statementsArray.length > 1 && proceed){
+		  	  if(statementsArray[1].search('effect text') != -1)
+		  finalStatement += statementsArray[1].replace('effect text', '- effect text') + '\r\n';
+	  else if(statementsArray[1].search('effects') != -1)
+		  finalStatement += statementsArray[1].replace('effects', '- effects') + '\r\n';
+	  else
+		  finalStatement += statementsArray[1] + '\r\n';
+	  }
+  }
+ 
+	for(var i = 2; i < statementsArray.length; i++){
+		finalStatement += statementsArray[i] + '\r\n';
+	}
+
+  var code = '- ' + dropdown_type + ':\r\n' + finalStatement;
   return code;
 };
 
 Blockly.JavaScript['useraction'] = function(block) {
   var value_actiontext = Blockly.JavaScript.valueToCode(block, 'actionText', Blockly.JavaScript.ORDER_ATOMIC);
   var statements_effects = Blockly.JavaScript.statementToCode(block, 'effects');
-
-  var code = '- user action:\r\n    action text: ' + value_actiontext + '\r\n    effect tree:\r\n    ' + statements_effects.replace('effects: \r\n', 'effects: \r\n    ');
+	console.log(statements_effects);
+  var statementsArray = statements_effects.split('\r\n');
+  var resulting = '';
+    if(statementsArray.length > 0){
+	  resulting += statementsArray[0].replace('- effects:', 'effects:').replace('- effect text:', 'effect text:') + '\r\n';
+  }
+  for(var i = 1; i < statementsArray.length; i++){
+	resulting += '    ' + statementsArray[i].replace('- effects:', 'effects:').replace('- effect text:', 'effect text:') + '\r\n';
+  }
+  var code = '- user action:\r\n    action text: ' + value_actiontext + '\r\n    effect tree:\r\n    ' + resulting;//+ statements_effects.replace('- effects: \r\n', 'effects: \r\n    ').replace('- effect text: \r\n', 'effect text: \r\n    ');
   return code;
 };
 
 Blockly.JavaScript['effecttext'] = function(block) {
   var value_text = Blockly.JavaScript.valueToCode(block, 'text', Blockly.JavaScript.ORDER_ATOMIC);
 
-  var code = 'effect text: ' + value_text + '\r\n';
+  var code = '- effect text: ' + value_text + '\r\n';
   return code;
 };
 
 Blockly.JavaScript['effects'] = function(block) {
   var statements_substatementlist = Blockly.JavaScript.statementToCode(block, 'substatementList');
   
-  var code = 'effects: \r\n' + statements_substatementlist;
+  var code = '- effects: \r\n' + statements_substatementlist;
   return code;
 };
 
@@ -1093,8 +914,21 @@ Blockly.JavaScript['agent'] = function(block) {
   var text_name = block.getFieldValue('name');
   var statements_body = Blockly.JavaScript.statementToCode(block, 'body');
   
+  //The first instance of '- ' needs to be removed. Condition, handles if the child has it
+  statements_body = statements_body.replace('- ', '');
   
   var code = text_name + ':\r\n' + statements_body;
+  return code;
+};
+
+Blockly.JavaScript['new_agent'] = function(block) {
+  var text_name = block.getFieldValue('name');
+  var statements_body = Blockly.JavaScript.statementToCode(block, 'body');
+  
+  //The first instance of '- ' needs to be removed. Condition, handles if the child has it
+  statements_body.replace('- ', '');
+  
+  var code = text_name + '(Test):\r\n' + statements_body;
   return code;
 };
 
@@ -1108,13 +942,17 @@ Blockly.JavaScript['condition'] = function(block) {
   var value_antecedent = Blockly.JavaScript.valueToCode(block, 'antecedent', Blockly.JavaScript.ORDER_ATOMIC);
   var statements_consequent = Blockly.JavaScript.statementToCode(block, 'consequent');
 
-  //Because Conditions are unique in how they want Effects to be formated, gotta find a fix those effects and effect text
+  //Because Conditions are unique in how they want Effects to be formated, gotta find and fix those effects and effect text
   //Here's my fix
   var statements_consequent_fixed = '';
   if(statements_consequent !== null){
 	  var statementsArray = statements_consequent.split('\r\n');
 	  for(var i = 0; i < statementsArray.length; i++){
-		  statements_consequent_fixed += statementsArray[i].replace('    ', '  ') + '\r\n';
+		  if(statementsArray[i].substring(0, 6) == '    - ')
+			  statements_consequent_fixed += statementsArray[i].replace('    - ', '  ') + '\r\n';
+		  else
+			  statements_consequent_fixed += statementsArray[i].replace('    ', '  ') + '\r\n';
+		
 	  }
   }
   var code = '- condition: ' + value_antecedent + '\r\n' + statements_consequent_fixed;
@@ -1146,5 +984,7 @@ Blockly.JavaScript['logic_operation'] = function(block) {
   var code = argument0 + ' ' + operator + ' ' + argument1;
   return [code, order];
 };
+
+
 	}
 }

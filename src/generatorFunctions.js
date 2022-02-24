@@ -72,7 +72,7 @@ Blockly.JavaScript['agent'] = function(block) {
   var statements_body = Blockly.JavaScript.statementToCode(block, 'body');
   
   
-  var code = text_name + ':\r\n' + statements_body;
+  var code = text_name + ':TEST\r\n' + statements_body;
   return code;
 };
 

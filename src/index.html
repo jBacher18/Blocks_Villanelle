@@ -7,90 +7,18 @@
   <link href="../node_modules/@blueprintjs/icons/lib/css/blueprint-icons.css" rel="stylesheet" />
   <link href="../node_modules/react-mosaic-component/react-mosaic-component.css" rel="stylesheet" />
   <style> ::-webkit-scrollbar { display: none; } </style>
-  
-  	<!--<script src="googleblock/blockly_compressed.js"></script>-->
-	<!--<script src="googleblock/blocks_compressed.js"></script>
-		
-	<script src="googleblock/msg/js/en.js"></script>
-	<script src="villanelleBlocksDef.js"></script>
-	<script src="googleblock/javascript_compressed.js"></script>-->
+ 
  
  <!-- need this to get the react-blockly to not be tiny-->
+ <!-- FROM J Thomas Bacher to all: I never got auto scaling worksapce, it involves this line below -->
  <style>
 .fill-height {
-  height: 600px;
+  height: 900px;
   color: black;
 }
 </style>
 </head>
 <body class="bp3-dark" style="background-color: #293742">
-
-  <!--<xml id="toolbox" style="display: none">
-  <category name="Villanelle Main">
-    <block type="villanellprog"></block>
-  </category>
-  <category name="Initialization">
-    <block type="setvariable">
-      <field name="variableName">&lt;var_name&gt;</field>
-    </block>
-  </category>
-  <category name="User Interaction">
-    <block type="description"></block>
-    <block type="useraction"></block>
-    <block type="node">
-      <field name="type">selector</field>
-    </block>
-    <block type="condition"></block>
-  </category>
-  <category name="Agents">
-    <block type="node">
-      <field name="type">selector</field>
-    </block>
-    <block type="condition"></block>
-    <block type="effecttext"></block>
-    <block type="effects"></block>
-  </category>
-  <category name="Effects">
-    <block type="effects">
-      <statement name="substatementList">
-        <block type="setvariable">
-          <field name="variableName">&lt;var_name&gt;</field>
-        </block>
-      </statement>
-    </block>
-    <block type="setvariable">
-      <field name="variableName">&lt;var_name&gt;</field>
-    </block>
-  </category>
-  <category name="Text">
-    <block type="text">
-      <field name="TEXT"></field>
-    </block>
-    <block type="text_join">
-      <mutation items="2"></mutation>
-    </block>
-    <block type="getvariable">
-      <field name="varName">&lt;var_name&gt;</field>
-    </block>
-  </category>
-  <category name="Logic">
-    <block type="logic_compare">
-      <field name="OP">EQ</field>
-    </block>
-    <block type="logic_operation">
-      <field name="OP">AND</field>
-    </block>
-    <block type="logic_negate"></block>
-    <block type="logic_boolean">
-      <field name="BOOL">TRUE</field>
-    </block>
-    <block type="getvariable">
-      <field name="varName">&lt;var_name&gt;</field>
-    </block>
-  </category>
-</xml>-->
-	
-  <!--<script src="generatorFunctions.js"></script>-->
   
   <div id="App"></div>
 </body>

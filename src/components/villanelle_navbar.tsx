@@ -88,7 +88,7 @@ export class VillanellePaneNavbar extends React.PureComponent<{
                         <Button className={Classes.MINIMAL} icon='citation' text='Play' active={this.props.currentTab === 'Play'} onClick={() => {
                             this.props.handler('Play', this.props.id);
                         }} />
-					<Button className={Classes.MINIMAL} icon='code' text='Tree Vis' active={this.props.currentTab === 'Tree'} onClick={() => {
+					<Button className={Classes.MINIMAL} icon='code' text='Tree Visualizer' active={this.props.currentTab === 'Tree'} onClick={() => {
                         this.props.handler('Tree', this.props.id);
                     }} />
 					</ButtonGroup>
